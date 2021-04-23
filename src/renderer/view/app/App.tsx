@@ -5,7 +5,7 @@ import { Button, Rate } from "antd";
 import { version } from "react/package.json";
 import "./App.scss";
 
-import TitleBar from "../../components/common/TitleBar"
+import TitleBar from "@/components/common/TitleBar"
 
 const App: FC = () => {
   return (
