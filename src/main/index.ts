@@ -3,7 +3,7 @@
 import { app } from 'electron'
 import initWindow from './services/windowManager'
 import DisableButton from './config/DisableButton'
-import installExtension, { REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS, REACT_PERF, MOBX_DEVTOOLS } from 'electron-devtools-installer'
+import installExtension, { REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS, MOBX_DEVTOOLS } from 'electron-devtools-installer'
 
 function onAppReady() {
   new initWindow().initWindow()
