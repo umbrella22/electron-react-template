@@ -5,10 +5,13 @@ import { Button, Rate } from "antd";
 import { version } from "react/package.json";
 import "./App.scss";
 
+import TitleBar from "../../components/common/TitleBar"
+
 const App: FC = () => {
   return (
     <div className="App">
       <div className="App-header">
+        <TitleBar />
         <div className="left-box">
           <div className="logo">
             <img src={logo} className="App-logo" alt="logo" />
