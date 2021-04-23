@@ -1,8 +1,8 @@
 .SkyTitleBar {
     position: sticky;
     top: 0;
-    width: 100%;
-    height: 40px;
+    width: 100vw;
     -webkit-app-region: drag;
     background-color: transparent;
+    overflow: hidden;
 }
