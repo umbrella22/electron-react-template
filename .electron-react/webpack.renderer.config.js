@@ -3,7 +3,6 @@
 process.env.BABEL_ENV = 'renderer'
 
 const path = require('path')
-const { dependencies } = require('../package.json')
 const webpack = require('webpack')
 const config = require('../config')
 const IsWeb = process.env.ENV_TARGET === 'web'
@@ -16,7 +15,6 @@ function resolve(dir) {
   return path.join(__dirname, '..', dir)
 }
 
-let whiteListedModules = IsWeb ? [] : ['react', "react-dom"]
 
 let rendererConfig = {
   devtool: '#cheap-module-eval-source-map',
@@ -24,7 +22,6 @@ let rendererConfig = {
     renderer: resolve('src/renderer/index.tsx')
   },
   externals: [
-    ...Object.keys(dependencies || {}).filter(d => !whiteListedModules.includes(d))
   ],
   module: {
     rules: [
@@ -77,7 +74,12 @@ let rendererConfig = {
           options: {
             cacheDirectory: true
           }
-        }, 'ts-loader'],
+        }, {
+          loader: 'ts-loader',
+          options: {
+            transpileOnly: true
+          }
+        }],
       },
       {
         test: /\.node$/,
@@ -170,7 +172,7 @@ let rendererConfig = {
     alias: {
       '@': resolve('src/renderer'),
     },
-    extensions: [".js", '.jsx', '.ts', '.tsx', '.json', '.css', '.node']
+    extensions: ['.tsx', ".js", '.jsx', '.ts', '.json', '.css', '.node']
   },
   target: 'electron-renderer'
 }
@@ -194,7 +196,8 @@ if (process.env.NODE_ENV === 'production') {
       ]
     }),
     new webpack.DefinePlugin({
-      'process.env.NODE_ENV': '"production"'
+      'process.env.NODE_ENV': '"production"',
+      'process.env.libPath': `"${config.DllFolder}"`
     }),
     new webpack.LoaderOptionsPlugin({
       minimize: true

@@ -13,10 +13,14 @@
   <body>
     <div id="root"></div>
     <!-- Set `__static` path to static files in production -->
-    <% if (!process.browser) { %>
+    <% if (!process.env.IS_WEB) { %>
       <script>
-        if (process.env.NODE_ENV !== 'development') process.env.__static = require('path').join(__dirname, '/static').replace(/\\/g, '\\\\')
-        if (process.env.NODE_ENV !== 'development') process.env.__lib = require('path').join(__dirname,'..','..','..','..','/lib').replace(/\\/g, '\\\\')
+        if (process.env.NODE_ENV !== 'development') {
+          window.__static = require('path').join(__dirname, '/static').replace(/\\/g, '\\\\')
+        }else{
+          window.__static = `http://localhost:${process.env.PORT}/static`
+        }
+        if (process.env.NODE_ENV !== 'development') window.__lib = process.env.libPath
       </script>
     <% } %>
 
