@@ -16,8 +16,7 @@ class MainInit {
   constructor() {
     this.winURL = winURL
     this.shartURL = loadingURL
-    // if (process.env.NODE_ENV === 'development') {
-    if (true) {
+    if (process.env.NODE_ENV === 'development') {
       menuconfig.push({
         label: '开发者设置',
         submenu: [{
@@ -39,6 +38,7 @@ class MainInit {
       frame: config.IsUseSysTitle,
       titleBarStyle: 'hidden',
       webPreferences: {
+        contextIsolation: false,
         nodeIntegration: true,
         webSecurity: false,
         // 如果是开发模式可以使用devTools
@@ -168,9 +168,6 @@ class MainInit {
           this.mainWindow.close()
         }
       })
-    })
-    app.on('gpu-process-crashed', () => {
-
     })
     this.mainWindow.on('closed', () => {
       this.mainWindow = null
