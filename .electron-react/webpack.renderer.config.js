@@ -1,23 +1,23 @@
 'use strict'
-
-process.env.BABEL_ENV = 'renderer'
+const IsWeb = process.env.BUILD_TARGET === 'web'
+process.env.BABEL_ENV = IsWeb ? 'web' : 'renderer'
 
 const path = require('path')
 const webpack = require('webpack')
 const config = require('../config')
-const IsWeb = process.env.ENV_TARGET === 'web'
+const { styleLoaders } = require('./utils')
 
 const CopyWebpackPlugin = require('copy-webpack-plugin')
-const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const MiniCssExtractPlugin = require('mini-css-extract-plugin').default
 const HtmlWebpackPlugin = require('html-webpack-plugin')
-const TerserPlugin = require('terser-webpack-plugin');
+const { ESBuildMinifyPlugin } = require('esbuild-loader')
 function resolve(dir) {
   return path.join(__dirname, '..', dir)
 }
 
 
 let rendererConfig = {
-  devtool: '#cheap-module-eval-source-map',
+  infrastructureLogging: { level: 'warn' },
   entry: {
     renderer: resolve('src/renderer/index.tsx')
   },
@@ -26,103 +26,28 @@ let rendererConfig = {
   module: {
     rules: [
       {
-        test: /\.scss$/,
-        use: ['style-loader',
-          {
-            loader: 'css-loader',
-            options: {
-              esModule: false
-            }
-          },
-          'sass-loader']
-      },
-      {
-        test: /\.sass$/,
-        use: ['style-loader',
-          {
-            loader: 'css-loader',
-            options: {
-              esModule: false
-            }
-          }, 'sass-loader?indentedSyntax']
-      },
-      {
-        test: /\.less$/,
-        use: ['style-loader',
-          {
-            loader: 'css-loader',
-            options: {
-              esModule: false
-            }
-          }, 'less-loader']
-      },
-      {
-        test: /\.css$/,
-        use: ['style-loader',
-          {
-            loader: 'css-loader',
-            options: {
-              esModule: false
-            }
-          }]
-      },
-      {
-        test: /\.ts[x]?$/,
-        exclude: /node_modules/,
-        use: [{
-          loader: 'babel-loader',
-          options: {
-            cacheDirectory: true
-          }
-        }, {
-          loader: 'ts-loader',
-          options: {
-            transpileOnly: true
-          }
-        }],
-      },
-      {
         test: /\.node$/,
         use: 'node-loader'
       },
       {
-        test: /\.svg$/,
-        loader: 'svg-sprite-loader',
-        include: [resolve('src/renderer/icons')],
-        options: {
-          symbolId: 'icon-[name]'
+        test: /\.(png|jpe?g|gif|svg)(\?.*)?$/,
+        type: "asset/resource",
+        generator: {
+          filename: 'imgs/[name]--[hash].[ext]'
         }
       },
       {
-        test: /\.(png|jpe?g|gif|svg)(\?.*)?$/,
-        exclude: [resolve('src/renderer/icons')],
-        use: {
-          loader: 'url-loader',
-          query: {
-            esModule: false,
-            limit: 10000,
-            name: 'imgs/[name]--[folder].[ext]'
-          }
-        },
-      },
-      {
         test: /\.(mp4|webm|ogg|mp3|wav|flac|aac)(\?.*)?$/,
-        loader: 'url-loader',
-        options: {
-          esModule: false,
-          limit: 10000,
-          name: 'media/[name]--[folder].[ext]'
+        type: "asset/resource",
+        generator: {
+          filename: 'media/[name]--[hash].[ext]'
         }
       },
       {
         test: /\.(woff2?|eot|ttf|otf)(\?.*)?$/,
-        use: {
-          loader: 'url-loader',
-          query: {
-            esModule: false,
-            limit: 10000,
-            name: 'fonts/[name]--[folder].[ext]'
-          }
+        type: "asset/resource",
+        generator: {
+          filename: 'fonts/[name]--[hash].[ext]'
         }
       }
     ]
@@ -132,8 +57,9 @@ let rendererConfig = {
     __filename: process.env.NODE_ENV !== 'production'
   },
   plugins: [
-    new MiniCssExtractPlugin({ filename: 'styles.css' }),
+    new MiniCssExtractPlugin(),
     new webpack.DefinePlugin({
+      'process.env.TERGET_ENV': JSON.stringify(config[process.env.TERGET_ENV]),
       'process.env': process.env.NODE_ENV === 'production' ? config.build.env : config.dev.env,
       'process.env.IS_WEB': IsWeb
     }),
@@ -161,11 +87,10 @@ let rendererConfig = {
       },
       nodeModules: false
     }),
-    new webpack.HotModuleReplacementPlugin(),
+    new webpack.NoEmitOnErrorsPlugin(),
   ],
   output: {
     filename: '[name].js',
-    libraryTarget: IsWeb ? 'var' : 'commonjs2',
     path: IsWeb ? path.join(__dirname, '../dist/web') : path.join(__dirname, '../dist/electron')
   },
   resolve: {
@@ -176,12 +101,25 @@ let rendererConfig = {
   },
   target: 'electron-renderer'
 }
+rendererConfig.module.rules = rendererConfig.module.rules.concat(styleLoaders({ sourceMap: process.env.NODE_ENV !== 'production' ? config.dev.cssSourceMap : false, extract: IsWeb, minifyCss: process.env.NODE_ENV === 'production' }))
+IsWeb ? rendererConfig.module.rules.push({ test: /\.ts[x]?$/, use: [{ loader: 'babel-loader', options: { cacheDirectory: true } }] }) : rendererConfig.module.rules.push({ test: /\.ts[x]?$/, use: [{ loader: 'esbuild-loader', options: { loader: 'tsx' } }] })
+
+
+/**
+ * Adjust rendererConfig for development settings
+ */
+if (process.env.NODE_ENV !== 'production' && !IsWeb) {
+  rendererConfig.plugins.push(
+    new webpack.DefinePlugin({
+      __lib: `"${path.join(__dirname, `../${config.DllFolder}`).replace(/\\/g, '\\\\')}"`
+    })
+  )
+}
 
 /**
  * Adjust rendererConfig for production settings
  */
 if (process.env.NODE_ENV === 'production') {
-  rendererConfig.devtool = ''
 
   rendererConfig.plugins.push(
     new CopyWebpackPlugin({
@@ -205,29 +143,14 @@ if (process.env.NODE_ENV === 'production') {
   )
   rendererConfig.optimization = {
     minimizer: [
-      new TerserPlugin({
-        test: /\.js(\?.*)?$/i,
-        extractComments: false,
-        cache: true,
-        sourceMap: false,
-        terserOptions: {
-          warnings: false,
-          compress: {
-            hoist_funs: false,
-            hoist_props: false,
-            hoist_vars: false,
-            inline: false,
-            loops: false,
-            dead_code: true,
-            booleans: true,
-            if_return: true,
-            warnings: false,
-            drop_console: true,
-            drop_debugger: true,
-            pure_funcs: ['console.log']
-          },
-        }
-      })]
+      new ESBuildMinifyPlugin({
+        sourcemap: false,
+        minifyWhitespace: true,
+        minifyIdentifiers: true,
+        minifySyntax: true,
+        css: true
+      })
+    ]
   }
   if (IsWeb) {
     rendererConfig.optimization.splitChunks = {
@@ -254,6 +177,8 @@ if (process.env.NODE_ENV === 'production') {
     }
     rendererConfig.optimization.runtimeChunk = { name: 'runtime' }
   }
-}
+} else {
+  rendererConfig.devtool = 'eval-source-map'
 
+}
 module.exports = rendererConfig

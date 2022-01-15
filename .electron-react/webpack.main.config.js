@@ -22,18 +22,10 @@ let mainConfig = {
     rules: [
       {
         test: /\.ts$/,
-        use: [{
-          loader: 'babel-loader',
-          options: {
-            cacheDirectory: true
-          }
-        }, {
-          loader: 'ts-loader',
-          options: {
-            transpileOnly: true
-          }
-        }],
-
+        loader: 'esbuild-loader',
+        options: {
+          loader: 'ts'
+        }
       },
       {
         test: /\.node$/,
@@ -50,7 +42,12 @@ let mainConfig = {
     libraryTarget: 'commonjs2',
     path: path.join(__dirname, '../dist/electron')
   },
-  plugins: [],
+  plugins: [
+    new webpack.NoEmitOnErrorsPlugin(),
+    new webpack.DefinePlugin({
+      'process.env.TERGET_ENV': JSON.stringify(config[process.env.TERGET_ENV]),
+    })
+  ],
   resolve: {
     alias: {
       '@config': resolve('config'),
