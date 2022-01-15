@@ -2,7 +2,7 @@ import { app, ipcMain, BrowserWindow, dialog } from 'electron'
 import { join } from 'path'
 import { arch, platform } from 'os'
 import { stat, remove } from 'fs-extra'
-import { version } from '../../../package.json'
+import packageInfo from '../../../package.json'
 
 
 /**
@@ -19,7 +19,7 @@ class Main {
 
   public mainWindow: BrowserWindow = null
   public downloadUrl: string = ""
-  public version: string = version
+  public version: string = packageInfo.version
   public baseUrl: string = ''
   public Sysarch: string = arch().includes('64') ? 'win64' : 'win32'
   public HistoryFilePath = join(app.getPath('downloads'), platform().includes('win32') ? `electron_${this.version}_${this.Sysarch}.exe` : `electron_${this.version}_mac.dmg`)
@@ -31,46 +31,44 @@ class Main {
   }
 
   start() {
-    ipcMain.on('satrt-download', (event, msg) => {
-      // 更新时检查有无同名文件，若有就删除，若无就开始下载
-      stat(this.HistoryFilePath, async (err, stats) => {
-        try {
-          if (stats) {
-            await remove(this.HistoryFilePath)
-          }
-          this.mainWindow.webContents.downloadURL(this.downloadUrl)
-        } catch (error) { console.log(error) }
+    // 更新时检查有无同名文件，若有就删除，若无就开始下载
+    stat(this.HistoryFilePath, async (err, stats) => {
+      try {
+        if (stats) {
+          await remove(this.HistoryFilePath)
+        }
+        this.mainWindow.webContents.downloadURL(this.downloadUrl)
+      } catch (error) { console.log(error) }
+    })
+    this.mainWindow.webContents.session.on('will-download', (event: any, item: any, webContents: any) => {
+      const filePath = join(app.getPath('downloads'), item.getFilename())
+      item.setSavePath(filePath)
+      item.on('updated', (event: any, state: String) => {
+        switch (state) {
+          case 'progressing':
+            this.mainWindow.webContents.send('download-progress', (item.getReceivedBytes() / item.getTotalBytes() * 100).toFixed(0))
+            break
+          default:
+            this.mainWindow.webContents.send('download-error', true)
+            dialog.showErrorBox('下载出错', '由于网络或其他未知原因导致下载出错')
+            break
+        }
       })
-      this.mainWindow.webContents.session.on('will-download', (event: any, item: any, webContents: any) => {
-        const filePath = join(app.getPath('downloads'), item.getFilename())
-        item.setSavePath(filePath)
-        item.on('updated', (event: any, state: String) => {
-          switch (state) {
-            case 'progressing':
-              this.mainWindow.webContents.send('download-progress', (item.getReceivedBytes() / item.getTotalBytes() * 100).toFixed(0))
-              break
-            default:
-              this.mainWindow.webContents.send('download-error', true)
-              dialog.showErrorBox('下载出错', '由于网络或其他未知原因导致客户端下载出错，请前往官网进行重新安装')
-              break
-          }
-        })
-        item.once('done', (event: any, state: String) => {
-          switch (state) {
-            case 'completed':
-              const data = {
-                filePath
-              }
-              this.mainWindow.webContents.send('download-done', data)
-              break
-            case 'interrupted':
-              this.mainWindow.webContents.send('download-error', true)
-              dialog.showErrorBox('下载出错', '由于网络或其他未知原因导致客户端下载出错，请前往官网进行重新安装')
-              break
-            default:
-              break
-          }
-        })
+      item.once('done', (event: any, state: String) => {
+        switch (state) {
+          case 'completed':
+            const data = {
+              filePath
+            }
+            this.mainWindow.webContents.send('download-done', data)
+            break
+          case 'interrupted':
+            this.mainWindow.webContents.send('download-error', true)
+            dialog.showErrorBox('下载出错', '由于网络或其他未知原因导致下载出错.')
+            break
+          default:
+            break
+        }
       })
     })
   }

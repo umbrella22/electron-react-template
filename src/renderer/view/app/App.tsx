@@ -1,8 +1,7 @@
 import React, { FC } from "react";
 import logo from "@/assets/logo.svg";
 import { Button, Rate } from "antd";
-// import { platform, arch } from "os";
-import { version } from "react/package.json";
+import reactVersion from "react/package.json";
 import "./App.scss";
 
 import TitleBar from "@/components/common/TitleBar"
@@ -24,7 +23,7 @@ const App: FC = () => {
             <div className="items">
               <div className="item">
                 <div className="name">react版本:</div>
-                <div className="value">{version}</div>
+                <div className="value">{reactVersion.version}</div>
               </div>
               <div className="item">
                 <div className="name">Electron版本:</div>

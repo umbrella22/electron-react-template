@@ -1,9 +1,9 @@
 import setIpc from './ipcMain'
 import config from '@config/index'
 import menuconfig from '../config/menu'
-import DownloadUpdate from './downloadFile'
-import Update from './checkupdate';
+
 import { app, BrowserWindow, Menu, dialog } from 'electron'
+import { platform } from 'os'
 import { winURL, loadingURL } from '../config/StaticPath'
 
 class MainInit {
@@ -26,6 +26,8 @@ class MainInit {
         }]
       })
     }
+    // 启用协议，这里暂时只用于自定义头部的时候使用
+    setIpc.Mainfunc(config.IsUseSysTitle)
   }
   // 主窗口函数
   createMainWindow() {
@@ -36,14 +38,14 @@ class MainInit {
       minWidth: 1366,
       show: false,
       frame: config.IsUseSysTitle,
-      titleBarStyle: 'hidden',
+      titleBarStyle: platform().includes('win32') ? 'default' : 'hidden',
       webPreferences: {
         contextIsolation: false,
         nodeIntegration: true,
         webSecurity: false,
         // 如果是开发模式可以使用devTools
-        // devTools: process.env.NODE_ENV === 'development',
-        devTools: true,
+        devTools: process.env.NODE_ENV === 'development',
+        // devTools: true,
         // 在macos中启用橡皮动画
         scrollBounce: process.platform === 'darwin'
       }
@@ -54,12 +56,6 @@ class MainInit {
     Menu.setApplicationMenu(menu)
     // 加载主窗口
     this.mainWindow.loadURL(this.winURL)
-    // 下载文件
-    new DownloadUpdate(this.mainWindow).start()
-    // electron-update注册
-    new Update(this.mainWindow)
-    // 启用协议，这里暂时只用于自定义头部的时候使用
-    setIpc.Mainfunc(this.mainWindow, config.IsUseSysTitle)
     // dom-ready之后显示界面
     this.mainWindow.webContents.once('dom-ready', () => {
       this.mainWindow.show()
@@ -174,7 +170,7 @@ class MainInit {
     })
   }
   // 加载窗口函数
-  loadindWindow(loadingURL: string) {
+  loadingWindow(loadingURL: string) {
     this.loadWindow = new BrowserWindow({
       width: 400,
       height: 600,
@@ -196,7 +192,7 @@ class MainInit {
   // 初始化窗口函数
   initWindow() {
     if (config.UseStartupChart) {
-      return this.loadindWindow(this.shartURL)
+      return this.loadingWindow(this.shartURL)
     } else {
       return this.createMainWindow()
     }

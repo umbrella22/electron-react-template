@@ -1,29 +1,41 @@
-import { ipcMain, dialog, BrowserWindow } from 'electron'
+import { ipcMain, dialog, BrowserWindow, IpcMainInvokeEvent } from 'electron'
 import Server from '../server'
 import { winURL } from '../config/StaticPath'
+import DownloadFile from './downloadFile'
+import Update from './checkupdate';
 
 export default {
-  Mainfunc(mainWindow: BrowserWindow, IsUseSysTitle: Boolean) {
-    ipcMain.handle('IsUseSysTitle', async () => {
+  Mainfunc(IsUseSysTitle: boolean) {
+    const updater = new Update();
+    ipcMain.handle('IsUseSysTitle', async (event: IpcMainInvokeEvent, args: unknown) => {
       return IsUseSysTitle
     })
-    ipcMain.handle('windows-mini', () => {
-      mainWindow.minimize()
+    ipcMain.handle('windows-mini', (event, args) => {
+      BrowserWindow.fromWebContents(event.sender)?.minimize()
     })
-    ipcMain.handle('window-max', async () => {
-      if (mainWindow.isMaximized()) {
-        mainWindow.restore()
+    ipcMain.handle('window-max', async (event, args) => {
+      if (BrowserWindow.fromWebContents(event.sender)?.isMaximized()) {
+        BrowserWindow.fromWebContents(event.sender)?.unmaximize()
         return { status: false }
       } else {
-        mainWindow.maximize()
+        BrowserWindow.fromWebContents(event.sender)?.maximize()
         return { status: true }
       }
     })
-    ipcMain.handle('window-close', () => {
-      mainWindow.close()
+    ipcMain.handle('window-close', (event, args) => {
+      BrowserWindow.fromWebContents(event.sender)?.close()
+    })
+    ipcMain.handle('start-download', (event, msg) => {
+      new DownloadFile(BrowserWindow.fromWebContents(event.sender), msg.downloadUrl).start()
+    })
+    ipcMain.handle('check-update', (event, args) => {
+      updater.checkUpdate(BrowserWindow.fromWebContents(event.sender))
+    })
+    ipcMain.handle('confirm-update', () => {
+      updater.quitInstall()
     })
     ipcMain.handle('open-messagebox', async (event, arg) => {
-      const res = await dialog.showMessageBox(mainWindow, {
+      const res = await dialog.showMessageBox(BrowserWindow.fromWebContents(event.sender), {
         type: arg.type || 'info',
         title: arg.title || '',
         buttons: arg.buttons || [],
@@ -69,8 +81,10 @@ export default {
         autoHideMenuBar: true,
         minWidth: 842,
         show: false,
+        frame: IsUseSysTitle,
         webPreferences: {
           nodeIntegration: true,
+          contextIsolation: false,
           webSecurity: false,
           // 如果是开发模式可以使用devTools
           devTools: process.env.NODE_ENV === 'development',
@@ -82,6 +96,9 @@ export default {
       ChildWin.loadURL(winURL + `#${arg.url}`)
       ChildWin.webContents.once('dom-ready', () => {
         ChildWin.show()
+        if (process.env.NODE_ENV === 'development') {
+          ChildWin.webContents.openDevTools({ mode: 'undocked', activate: true })
+        }
         ChildWin.webContents.send('send-data', arg.sendData)
         if (arg.IsPay) {
           // 检查支付时候自动关闭小窗口
