@@ -8,7 +8,7 @@ const config = require('../config')
 const { styleLoaders } = require('./utils')
 
 const CopyWebpackPlugin = require('copy-webpack-plugin')
-const MiniCssExtractPlugin = require('mini-css-extract-plugin').default
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const { ESBuildMinifyPlugin } = require('esbuild-loader')
 function resolve(dir) {
