@@ -1,21 +1,23 @@
-import { ipcMain, dialog, BrowserWindow, IpcMainInvokeEvent } from 'electron'
-import Server from '../server'
+import { ipcMain, dialog, BrowserWindow, app } from 'electron'
 import { winURL } from '../config/StaticPath'
+import { updater } from './HotUpdater'
 import DownloadFile from './downloadFile'
-import Update from './checkupdate';
+import Update from './checkupdate'
+import { join } from 'path'
+import config from '@config/index'
 
 export default {
-  Mainfunc(IsUseSysTitle: boolean) {
-    const updater = new Update();
-    ipcMain.handle('IsUseSysTitle', async (event: IpcMainInvokeEvent, args: unknown) => {
-      return IsUseSysTitle
+  Mainfunc() {
+    const allUpdater = new Update()
+    ipcMain.handle('IsUseSysTitle', async () => {
+      return config.IsUseSysTitle
     })
     ipcMain.handle('windows-mini', (event, args) => {
       BrowserWindow.fromWebContents(event.sender)?.minimize()
     })
     ipcMain.handle('window-max', async (event, args) => {
       if (BrowserWindow.fromWebContents(event.sender)?.isMaximized()) {
-        BrowserWindow.fromWebContents(event.sender)?.unmaximize()
+        BrowserWindow.fromWebContents(event.sender)?.restore()
         return { status: false }
       } else {
         BrowserWindow.fromWebContents(event.sender)?.maximize()
@@ -25,14 +27,14 @@ export default {
     ipcMain.handle('window-close', (event, args) => {
       BrowserWindow.fromWebContents(event.sender)?.close()
     })
-    ipcMain.handle('start-download', (event, msg) => {
-      new DownloadFile(BrowserWindow.fromWebContents(event.sender), msg.downloadUrl).start()
+    ipcMain.handle('app-close', (event, args) => {
+      app.quit()
     })
-    ipcMain.handle('check-update', (event, args) => {
-      updater.checkUpdate(BrowserWindow.fromWebContents(event.sender))
+    ipcMain.handle('check-update', (event) => {
+      allUpdater.checkUpdate(BrowserWindow.fromWebContents(event.sender))
     })
     ipcMain.handle('confirm-update', () => {
-      updater.quitInstall()
+      allUpdater.quitAndInstall()
     })
     ipcMain.handle('open-messagebox', async (event, arg) => {
       const res = await dialog.showMessageBox(BrowserWindow.fromWebContents(event.sender), {
@@ -50,56 +52,41 @@ export default {
         arg.message
       )
     })
-    ipcMain.handle('statr-server', async () => {
-      try {
-        const serveStatus = await Server.StatrServer()
-        console.log(serveStatus)
-        return serveStatus
-      } catch (error) {
-        dialog.showErrorBox(
-          '错误',
-          error
-        )
-      }
+    ipcMain.handle('hot-update', (event, arg) => {
+      updater(BrowserWindow.fromWebContents(event.sender))
     })
-    ipcMain.handle('stop-server', async (event, arg) => {
-      try {
-        const serveStatus = await Server.StopServer()
-        return serveStatus
-      } catch (error) {
-        dialog.showErrorBox(
-          '错误',
-          error
-        )
-      }
+    ipcMain.handle('start-download', (event, msg) => {
+      new DownloadFile(BrowserWindow.fromWebContents(event.sender), msg.downloadUrl).start()
     })
     ipcMain.handle('open-win', (event, arg) => {
       const ChildWin = new BrowserWindow({
+        titleBarStyle: config.IsUseSysTitle ? 'default' : 'hidden',
         height: 595,
         useContentSize: true,
-        width: 842,
+        width: 1140,
         autoHideMenuBar: true,
         minWidth: 842,
+        frame: config.IsUseSysTitle,
         show: false,
-        frame: IsUseSysTitle,
         webPreferences: {
-          nodeIntegration: true,
-          contextIsolation: false,
+          sandbox: false,
           webSecurity: false,
           // 如果是开发模式可以使用devTools
           devTools: process.env.NODE_ENV === 'development',
-          // devTools: true,
           // 在macos中启用橡皮动画
-          scrollBounce: process.platform === 'darwin'
+          scrollBounce: process.platform === 'darwin',
+          preload: process.env.NODE_ENV === 'development'
+            ? join(app.getAppPath(), 'preload.js')
+            : join(app.getAppPath(), 'dist', 'electron', 'main', 'preload.js')
         }
       })
+      // 开发模式下自动开启devtools
+      if (process.env.NODE_ENV === 'development') {
+        ChildWin.webContents.openDevTools({ mode: 'undocked', activate: true })
+      }
       ChildWin.loadURL(winURL + `#${arg.url}`)
-      ChildWin.webContents.once('dom-ready', () => {
+      ChildWin.once('ready-to-show', () => {
         ChildWin.show()
-        if (process.env.NODE_ENV === 'development') {
-          ChildWin.webContents.openDevTools({ mode: 'undocked', activate: true })
-        }
-        ChildWin.webContents.send('send-data', arg.sendData)
         if (arg.IsPay) {
           // 检查支付时候自动关闭小窗口
           const testUrl = setInterval(() => {
@@ -112,6 +99,10 @@ export default {
             clearInterval(testUrl)
           })
         }
+      })
+      // 渲染进程显示时触发
+      ChildWin.once("show", () => {
+        ChildWin.webContents.send('send-data', arg.sendData)
       })
     })
   }

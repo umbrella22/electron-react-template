@@ -1,7 +1,7 @@
 // 这里是定义菜单的地方，详情请查看 https://electronjs.org/docs/api/menu
 import { dialog } from 'electron'
 import { type, arch, release } from 'os'
-import { version } from '../../../package.json'
+import packageInfo from '../../../package.json'
 
 const menu = [
   {
@@ -19,8 +19,7 @@ const menu = [
     label: '帮助',
     submenu: [{
       label: '关于',
-      role: 'about',
-      click() {
+      click: function () {
         info()
       }
     }]
@@ -29,8 +28,8 @@ function info() {
   dialog.showMessageBox({
     title: '关于',
     type: 'info',
-    message: 'Electron-React框架',
-    detail: `版本信息：${version}\n引擎版本：${process.versions.v8}\n当前系统：${type()} ${arch()} ${release()}`,
+    message: 'electron-Vue框架',
+    detail: `版本信息：${packageInfo.version}\n引擎版本：${process.versions.v8}\n当前系统：${type()} ${arch()} ${release()}`,
     noLink: true,
     buttons: ['查看github', '确定']
   })

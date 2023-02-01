@@ -1,12 +1,27 @@
 import React, { FC } from "react";
-import logo from "@/assets/logo.svg";
+import logo from "@renderer/assets/logo.svg";
 import { Button, Rate } from "antd";
-import reactVersion from "react/package.json";
+import { version } from "react/package.json";
 import "./App.scss";
 
-import TitleBar from "@/components/common/TitleBar"
+import TitleBar from "@renderer/components/common/TitleBar";
 
 const App: FC = () => {
+  const { systemInfo } = window;
+  const systemInfolist = [
+    {
+      name: "系统平台",
+      value: systemInfo.platform || "浏览器环境",
+    },
+    {
+      name: "electron版本",
+      value: systemInfo.release || "浏览器环境",
+    },
+    {
+      name: "系统位数",
+      value: systemInfo ? `${systemInfo.arch}位` : "浏览器环境",
+    },
+  ];
   return (
     <div className="App">
       <div className="App-header">
@@ -23,56 +38,22 @@ const App: FC = () => {
             <div className="items">
               <div className="item">
                 <div className="name">react版本:</div>
-                <div className="value">{reactVersion.version}</div>
+                <div className="value">{version}</div>
               </div>
-              <div className="item">
-                <div className="name">Electron版本:</div>
-                <div className="value">
-                  {!process.env.IS_WEB
-                    ? process.versions.electron
-                    : "浏览器环境"}
-                </div>
-              </div>
-              <div className="item">
-                <div className="name">Node版本:</div>
-                <div className="value">
-                  {!process.env.IS_WEB ? process.versions.node : "浏览器环境"}
-                </div>
-              </div>
-              <div className="item">
-                <div className="name">所运行的系统:</div>
-                <div className="value">
-                  {!process.env.IS_WEB
-                    ? require("os").platform()
-                    : "浏览器环境"}
-                </div>
-              </div>
-              <div className="item">
-                <div className="name">所运行的系统:</div>
-                <div className="value">
-                  {!process.env.IS_WEB ? require("os").arch() : "浏览器环境"}位
-                </div>
-              </div>
-              <div className="item">
-                <div className="name">静态文件目录:</div>
-                <div className="value">
-                  {!process.env.IS_WEB
-                    ? window.__static
-                    : "web环境下没有此目录"}
-                </div>
-              </div>
-              <div className="item">
-                <div className="name">dll自定义路径:</div>
-                <div className="value">
-                  {!process.env.IS_WEB
-                    ? process.env.__lib || window.__lib
-                    : "web环境下没有此目录"}
-                </div>
-              </div>
+
+              {systemInfolist.map((item, index) => {
+                return (
+                  <div className="item" key={index}>
+                    <div className="name">{item.name}:</div>
+                    <div className="value">{item.value}</div>
+                  </div>
+                );
+              })}
+
               <div className="item">
                 <div className="name">antd组件示例</div>
-                <div className="value">
-                  <Button type="primary">Primary</Button>
+                <div className="value flex-box">
+                  <Button type="primary">按钮</Button>
                   <Rate />
                 </div>
               </div>

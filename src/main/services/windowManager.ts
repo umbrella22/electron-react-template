@@ -1,10 +1,11 @@
 import setIpc from './ipcMain'
 import config from '@config/index'
 import menuconfig from '../config/menu'
-
 import { app, BrowserWindow, Menu, dialog } from 'electron'
-import { platform } from 'os'
-import { winURL, loadingURL } from '../config/StaticPath'
+import { winURL, loadingURL,getPreloadFile } from '../config/StaticPath'
+import { join } from "path"
+
+setIpc.Mainfunc()
 
 class MainInit {
 
@@ -26,28 +27,26 @@ class MainInit {
         }]
       })
     }
-    // 启用协议，这里暂时只用于自定义头部的时候使用
-    setIpc.Mainfunc(config.IsUseSysTitle)
   }
   // 主窗口函数
   createMainWindow() {
     this.mainWindow = new BrowserWindow({
+      titleBarStyle: config.IsUseSysTitle ? 'default' : 'hidden',
       height: 800,
       useContentSize: true,
       width: 1700,
       minWidth: 1366,
       show: false,
       frame: config.IsUseSysTitle,
-      titleBarStyle: platform().includes('win32') ? 'default' : 'hidden',
       webPreferences: {
-        contextIsolation: false,
-        nodeIntegration: true,
+        sandbox: false,
         webSecurity: false,
         // 如果是开发模式可以使用devTools
         devTools: process.env.NODE_ENV === 'development',
-        // devTools: true,
         // 在macos中启用橡皮动画
-        scrollBounce: process.platform === 'darwin'
+        scrollBounce: process.platform === 'darwin',
+        preload: getPreloadFile('preload')
+
       }
     })
     // 赋予模板
@@ -57,7 +56,7 @@ class MainInit {
     // 加载主窗口
     this.mainWindow.loadURL(this.winURL)
     // dom-ready之后显示界面
-    this.mainWindow.webContents.once('dom-ready', () => {
+    this.mainWindow.once('ready-to-show', () => {
       this.mainWindow.show()
       if (config.UseStartupChart) this.loadWindow.destroy()
     })
@@ -178,7 +177,12 @@ class MainInit {
       skipTaskbar: true,
       transparent: true,
       resizable: false,
-      webPreferences: { experimentalFeatures: true }
+      webPreferences: {
+        experimentalFeatures: true,
+        preload: process.env.NODE_ENV === 'development'
+          ? join(app.getAppPath(), 'preload.js')
+          : join(app.getAppPath(), 'dist/electron/main/preload.js')
+      }
     })
 
     this.loadWindow.loadURL(loadingURL)
