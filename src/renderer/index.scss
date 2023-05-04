@@ -5,9 +5,20 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: #f0f2f6;
+  font-size: 12px;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+.ant-checkbox {
+  top: 4px !important;
+}
+
+.ant-checkbox+span {
+    padding-inline-start: 5px;
+  padding-inline-end: 5px;
 }

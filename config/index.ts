@@ -1,11 +1,11 @@
-import prod from './prod.env'
-import dev from './dev.env'
+import prod from './prod.env';
+import dev from './dev.env';
 
 export default {
   build: {
     env: prod,
-    hotPublishUrl: "",
-    hotPublishConfigName: "update-config"
+    hotPublishUrl: '',
+    hotPublishConfigName: 'update-config',
   },
   dev: {
     env: dev,
@@ -17,6 +17,6 @@ export default {
   DllFolder: '',
   HotUpdateFolder: 'update',
   UseStartupChart: true,
-  IsUseSysTitle: false,
-  BuiltInServerPort: 25565
-}
+  IsUseSysTitle: true,
+  BuiltInServerPort: 25565,
+};
