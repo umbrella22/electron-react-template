@@ -1,0 +1,22 @@
+.ease-main-container {
+    padding: 8px;
+    box-sizing: border-box;
+    width: 100%;
+    .top-container {
+        display: flex;
+        align-items: center;
+        .item {
+            margin-right: 8px;
+            &:last-child {
+                margin-right: 0;
+            }
+            width: 100%;
+        }
+    }
+    .main-container {
+        height: 492px;
+        background: #FFFFFF;
+        border: 1px solid #E1E2E2;
+        margin-top: 8px;
+    }
+}

@@ -1,12 +1,16 @@
-import React from "react";
-import "./TitleBar.scss";
+import React, { FC } from 'react';
+import './TitleBar.scss';
 
-function App() {
-  return (
-    <div
-      className="SkyTitleBar"
-      style={{ height: process.env.IS_WEB ? "0px" : "40px" }}></div>
-  );
+interface Props {
+  title: string;
 }
+
+const App: FC<Props> = ({ title }) => {
+  return (
+    <div className="ease-title-bar" style={{ height: process.env.IS_WEB ? '0px' : '36px' }}>
+      {title}
+    </div>
+  );
+};
 
 export default App;

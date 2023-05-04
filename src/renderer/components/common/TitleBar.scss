@@ -1,8 +1,44 @@
-.SkyTitleBar {
+.ease-title-bar {
     position: sticky;
     top: 0;
     width: 100vw;
     -webkit-app-region: drag;
-    background-color: transparent;
+    background: #4E7562;    
     overflow: hidden;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #fff;
+    .ease-title-bar__logo {
+        display: flex;
+        align-items: center;
+        margin-left: 80px;
+        .logo {
+            width: 24px;
+            height: 24px;
+            border: 1px solid #fff;
+            border-radius: 50%;
+        }
+        .app-name {
+            margin-left: 12px;
+        }
+    }
+    .ease-title-bar__menu {
+        display: flex;
+        align-items: center;
+        margin-right: 20px;
+        .ease-title-bar__menu-item {
+            margin-left: 8px;
+            height: 24px;
+            padding: 0 7px;
+            line-height: 24px;
+            border-radius: 4px;
+            background:  rgba(255,255,255,0.35);
+            cursor: pointer;
+        }
+        .active {
+            background: #4285F4;
+            cursor: pointer;
+        }
+    }
 }

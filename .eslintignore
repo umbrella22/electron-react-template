@@ -1,3 +1,6 @@
-test/unit/coverage/**
-test/unit/*.js
-test/e2e/*.js
+.eslintrc.js
+node_modules
+dist
+.DS_Store
+*.local
+vite.config.ts
